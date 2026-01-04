@@ -1,0 +1,30 @@
+mpsenv/
+diseasedetection/data/
+diseasedetection/plantkaggle
+myenv
+fastapi/__pycache__
+diseasedetection/weights
+diseasedetection/__pycache__
+fastapi/static
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Log files
+*.log
+
+# Database dumps
+*.rdb
+
+# ML models / data
+*.pkl
+*.h5
+*.csv
+
+# IDE and OS files
+.vscode/
+.DS_Store
+
+

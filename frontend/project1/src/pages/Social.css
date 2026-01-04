@@ -1,0 +1,98 @@
+.social-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding-top: 70px; 
+}
+
+/* Navbar Styling */
+.social-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #607D8B, #CFD8DC);
+
+  color: white;
+  padding: 15px 20px;
+}
+
+.social-navbar h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.nav-links {
+  margin-right:1%;
+  display: flex;
+  gap: 15px;
+}
+
+/* Add styles for active navigation links */
+.social-navbar .nav-links a.active {
+    color: #2ecc71;
+    border-bottom: 2px solid #2ecc71;
+    padding-bottom: 5px;
+}
+
+.social-navbar .nav-links a {
+    color: #444;
+    transition: color 0.3s, border-bottom 0.3s;
+    padding-bottom: 5px;
+    position: relative;
+}
+
+.social-navbar .nav-links a:hover {
+    color: #2ecc71;
+}
+
+/* Improve link transitions */
+a {
+    transition: color 0.2s, text-decoration 0.2s;
+}
+
+/* Add transition for link hover effects */
+a:hover {
+    text-decoration: none;
+}
+
+/* Content Wrapper */
+.social-content {
+  display: flex;
+  flex-grow: 1;
+}
+
+/* Sidebar */
+.social-sidebar {
+  width: 12%;
+  padding: 15px;
+  background: #f4f4f4;
+  border-right: 2px solid #ddd;
+}
+
+/* Main Content */
+.social-main {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.btn-green {
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: #2E8B57; /* SeaGreen */
+  color: white;
+  font-weight: bold;
+  border-radius: 6px;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-green:hover {
+  background-color: #228B22; /* ForestGreen */
+  transform: scale(1.05);
+}
+
+.btn-green:active {
+  transform: scale(0.98);
+}
