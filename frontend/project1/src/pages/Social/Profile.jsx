@@ -49,8 +49,8 @@ export default function SocialProfile() {
                 profilePic: profilePic,
                 bio: socialData?.bio || "Farmer at FarmConnect",
                 farmLocation: socialData?.farmLocation || "India",
-                followers: socialData?.followers || 3,
-                following: socialData?.following || 3,
+                followers: socialData?.followers || 0,
+                following: socialData?.following || 0,
                 posts: socialData?.posts || []
             };
         };

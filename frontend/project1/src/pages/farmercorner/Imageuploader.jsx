@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { FiUploadCloud, FiCamera } from "react-icons/fi";
 import PYTHON_API_URL from "../../api/python.js";
 
-const ImageUploader = ({ onImageUpload, onDetect,buttonname }) => {
+const ImageUploader = ({ onImageUpload }) => {
   const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL;
   const [image, setImage] = useState(null);
   const [cropType, setCropType] = useState("");
@@ -79,104 +79,7 @@ const ImageUploader = ({ onImageUpload, onDetect,buttonname }) => {
     }
   };
 
-  const handleDetectPesticide = async () => {
-    if (!image) {
-      alert("Please upload an image.");
-      return;
-    }
   
-    const payload = {
-      imageData: image, // already base64
-      detectedAt: new Date().toISOString()
-    };
-  
-    try {
-      const response = await fetch(`${PYTHON_API_URL}/analysis`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-  
-      if (!response.ok) {
-        throw new Error("Detection failed");
-      }
-  
-      const data = await response.json();
-      data.img = `${FASTAPI_URL}${data.img}`;
-      console.log("✅ Detection result:", data);
-      
-      alert(`✅ Detection Complete!\n\nDisease: ${data.disease}\nSeverity: ${data.severity}%\nConfidence: ${data.confidence}%`);
-
-      onDetect(data);
-      setFadeOutImage(true);
-      setTimeout(() => {
-        setImage(null);
-        setCropType("");
-        setFadeOutImage(false);
-      }, 500);
-    } catch (err) {
-      console.error("❌ Error during detection:", err);
-      alert("Something went wrong. Check console.");
-    }
-  };
-  
-  
-  return (
-    <>
-
-
-      {/* Drag & Drop Box */}
-      <div
-        className="dragdropbox"
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onClick={openFilePicker}
-      >
-        <FiUploadCloud />
-        <p>Drag & drop your image here or click to browse</p>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-        />
-      </div>
-
-      {/* Camera Capture */}
-      <button onClick={startCamera} className="cameracapturebutton">
-        <FiCamera /> Capture from Camera
-      </button>
-
-      {/* Show Video Stream if Camera is Open */}
-      {cameraOpen && (
-        <div className={`video-container ${fadeOutVideo ? "fade-out" : ""}`}>
-          <video ref={videoRef} autoPlay className="video"></video>
-          <button onClick={handleCameraCapture}>Capture Image</button>
-          <canvas ref={canvasRef} className="hidden"></canvas>
-        </div>
-      )}
-
-      
-
-      {/* Preview Uploaded Image */}
-      {image && (
-        <div className={`preview ${fadeOutImage ? "fade-out" : ""}`}>
-          <p className="text-white text-sm">Preview:</p>
-          <img
-            src={image}
-            alt="Uploaded Preview"
-            
-          />
-        </div>
-      )}
-
-      {/* Detect Pesticide Button */}
-      <button className="detect-button" disabled={!image} onClick={handleDetectPesticide}>
-        {buttonname}
-      </button>
 
       {/* Styles */}
       <style>

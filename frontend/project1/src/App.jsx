@@ -1,36 +1,47 @@
-import { useState, useEffect } from 'react'
-import {BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom'
-import Layout from "./pages/Layout.jsx"
-import Home from "./pages/Home.jsx"
-import Login from './pages/login.jsx'
-import Register from './pages/Register.jsx'
-import Box2 from './pages/Box2.jsx'
-import Notfound from './pages/Notfound.jsx'
-import "./pages/styles.css"
-import FarmScene from './pages/Social/Feed.jsx'
-import Profile from './pages/Profile.jsx'
-import Shop from './pages/Shop.jsx'
-import FCLayout from './pages/FCLayout.jsx'
-import Pest from './pages/farmercorner/Pest.jsx'
-import Fertiliser from './pages/farmercorner/Fertiliser.jsx'
-import Tutorials from './pages/farmercorner/Tutorials.jsx'
-import FCIndex from './pages/farmercorner/FCIndex.jsx'
-import CropRecommendation from './pages/farmercorner/CropRecommendation.jsx'
-import defaultAvatar from "./frontimages/onlyplant.jpg"
-import Shared from './pages/Social/Shared.jsx'
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+
+// Layout & Context
+import  Layout from './pages/Layout.jsx' // Double-check this path
+import { ShopProvider } from './context/ShopContext';
+ 
+// Auth & Core Pages
+import Home from './pages/Home.jsx';
+import Login from './pages/login.jsx';
+import Register from './pages/Register.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
+import Profile from './pages/Profile.jsx';
+import Notfound from './pages/Notfound.jsx';
+import Box2 from './pages/Box2.jsx';
+
+// Social Pages
 import SocialLayout from "./pages/Social.jsx";
-import ProductDetail from './pages/ProductDetail.jsx'
-import EcommerceLayout from './pages/EcommerceLayout.jsx'
-import Cart from './pages/Cart.jsx'
-import SocialProfile from './pages/Social/Profile.jsx'
-import NewSocialPost from './pages/Social/NewPost.jsx'
+import FarmScene from './pages/Social/Feed.jsx';
+import Shared from './pages/Social/Shared.jsx';
+import SocialProfile from './pages/Social/Profile.jsx';
+import NewSocialPost from './pages/Social/NewPost.jsx';
+import PostView from './pages/Social/PostView.jsx';
 
-import PostView from './pages/Social/PostView.jsx'
+// Farmer Corner
+import FCLayout from './pages/FCLayout.jsx';
+import FCIndex from './pages/farmercorner/FCIndex.jsx';
+//import Pest from './pages/farmercorner/Pest.jsx';
+import Fertiliser from './pages/farmercorner/Fertiliser.jsx';
+import Tutorials from './pages/farmercorner/Tutorials.jsx';
+import CropRecommendation from './pages/farmercorner/CropRecommendation.jsx';
 
-import SearchResults from './pages/SearchResults.jsx'
-import { ShopProvider } from './context/ShopContext'
-import OrderHistory from './pages/OrderHistory'
+// Ecommerce
+import EcommerceLayout from './pages/EcommerceLayout.jsx';
+import Shop from './pages/Shop.jsx';
+import ProductDetail from './pages/ProductDetail.jsx';
+import Cart from './pages/Cart.jsx';
+import SearchResults from './pages/SearchResults.jsx';
+import OrderHistory from './pages/OrderHistory';
+import CreateProduct from './pages/CreateProduct.jsx';
 
+// Assets
+import "./pages/styles.css";
+import defaultAvatar from "./frontimages/onlyplant.jpg";
 // function App(props) {
 //  const loginb = true;
 //  const user = {
@@ -331,12 +342,13 @@ function App() {
               )
             }
           />
-    <Route path="shop" element={<EcommerceLayout login={isLoggedIn} />}>
+    <Route path="shop" element={<EcommerceLayout login={isLoggedIn} user={user} />}>
       <Route index element={<Shop login={isLoggedIn} />} />
       <Route path="product/:productId" element={<ProductDetail />} />
       <Route path="cart" element={<Cart />} />
       <Route path="search" element={<SearchResults />} />
       <Route path="order-history" element={<OrderHistory />} />
+      <Route path="create" element={<CreateProduct />} />
     </Route>
 
           {/* <Route path="shop" element={<EcommerceLayout login={isLoggedIn} />}>
@@ -347,10 +359,11 @@ function App() {
 
           <Route path="/farmercorner" element={<FCLayout login={isLoggedIn}/>}>
             <Route index element={<FCIndex login={isLoggedIn}/>}/>
-            <Route path="pest-disease-detection" element={<Pest login={isLoggedIn}/>}/>
+            
             <Route path="fertilizer-recommendation" element={<Fertiliser login={isLoggedIn}/>}/>
             <Route path="organic-farming-tutorials" element={<Tutorials login={isLoggedIn}/>}/>
             <Route path="crop-recommendation" element={<CropRecommendation login={isLoggedIn} />}/>
+
           </Route>
         </Route>
 
@@ -372,6 +385,15 @@ function App() {
             isLoggedIn ? 
             <Navigate to="/" replace /> : 
             <Register login={isLoggedIn} setLogin={setIsLoggedIn} setUser={setUser} />
+          }
+        />
+
+        <Route 
+          path="verify-email"
+          element={
+            isLoggedIn ?
+            <Navigate to="/" replace /> :
+            <VerifyEmail />
           }
         />
       </Routes>

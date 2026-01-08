@@ -48,25 +48,6 @@ recommendations = {
     }
 }
 
-# Request schema
-class AnalysisRequest(BaseModel):
-    imageData: str  # base64 encoded image
-    detectedAt: str
-
-def load_cached_models():
-    if not hasattr(app.state, "model1") or not hasattr(app.state, "model2"):
-        print("📦 Loading models into cache...")
-        model1, model2 = load_models(
-            "../diseasedetection/weights/stage_one.h5",
-            "../diseasedetection/weights/models.pkl"
-        )
-        app.state.model1 = model1
-        app.state.model2 = model2
-    else:
-        print("✅ Models loaded from cache.")
-
-    return app.state.model1, app.state.model2
-
 def soil_health_score(n, p, k):
     # Ideal range (can be adjusted based on soil/crop type)
     optimal_min = 40
@@ -97,47 +78,6 @@ def soil_health_score(n, p, k):
     # Final health score
     health_score = 100 * (0.7 * avg_npk_score + 0.3 * balance_penalty)
     return round(health_score, 2)
-
-@app.post("/api/analysis")
-async def analyze(request: AnalysisRequest):
-    try:
-        # Extract and decode base64 image
-        model1,model2  = load_cached_models()  
-
-        base64_data = request.imageData.split(",")[-1]
-        image_bytes = base64.b64decode(base64_data)
-
-        # Save image
-        filename = f"img_{int(time.time())}.png"
-        filepath = os.path.join(UPLOAD_DIR, filename)
-        with open(filepath, "wb") as f:
-            f.write(image_bytes)
-
-        # Perform analysis
-       
-        prediction = results(filepath,model1,model2)
-        parts = prediction.strip().split(" ")
-        crop = parts[0]
-        disease = " ".join(parts[1:])
-        return {
-            "severity": 60,
-            "confidence": 70,
-            "pesticide": disease.lower().replace(" ", "_"),
-            "img": f"/{filepath}",
-            "crop": crop,
-            "disease": disease
-        }
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-
-
-@app.get("/api/recommendation/{crop}/{disease}")
-async def get_recommendation(crop: str, disease: str):
-    key = f"{crop}_{disease}".lower().replace(" ", "_")
-    response =  get_crop_remedy(key)
-    return response
 
 
 

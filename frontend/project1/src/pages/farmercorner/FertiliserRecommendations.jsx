@@ -19,7 +19,7 @@ const Recommendations = ({ fertilizer, dosage, bestPractices, warnings, trendsDa
       
       
       </div>
-      {fertilizer.image && <img src={fertilizer.image} alt="Fertilizer"  style={{borderRadius:"5%",marginBottom:"3%",width:"52%"}}/>}
+      {fertilizer.image && <img src={fertilizer.image} alt="Fertilizer"  style={{borderRadius:"5%",marginBottom:"3%",width:"32%"}}/>}
       <div className="remedy-container">
       <p><strong>Dosage & Application:</strong> {dosage}</p>
       </div>

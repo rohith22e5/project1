@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 export default function NewSocialPost() {
     const [caption, setCaption] = useState("");
     const [image, setImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
@@ -13,9 +14,10 @@ export default function NewSocialPost() {
     const handleImageChange = (event) => {
         const file = event.target.files[0];
         if (file) {
+            setImage(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImage(reader.result);
+                setImagePreview(reader.result);
             };
             reader.readAsDataURL(file);
         }
@@ -33,6 +35,31 @@ export default function NewSocialPost() {
             setLoading(true);
             setError("");
             
+            let imageUrl = "";
+            if (image) {
+                const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME // Replace with your Cloudinary cloud name
+                const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_PRESET_NAME;   //Replace with your unsigned upload preset
+
+                const formData = new FormData();
+                formData.append("file", image);
+                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+                const response = await fetch(
+                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    }
+                );
+
+                const data = await response.json();
+                if (data.secure_url) {
+                    imageUrl = data.secure_url;
+                } else {
+                    throw new Error("Image upload failed");
+                }
+            }
+
             const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error('Please log in to create a post');
@@ -47,7 +74,7 @@ export default function NewSocialPost() {
             
             const postData = {
                 caption,
-                image
+                image: imageUrl
             };
             
             const response = await axios.post(
@@ -86,7 +113,7 @@ export default function NewSocialPost() {
                 className="new-social-file-input" 
                 onChange={handleImageChange} 
             />
-            {image && <img src={image} alt="Preview" className="new-social-image-preview" />}
+            {imagePreview && <img src={imagePreview} alt="Preview" className="new-social-image-preview" />}
             <button 
                 className="new-social-submit" 
                 onClick={handleSubmit}

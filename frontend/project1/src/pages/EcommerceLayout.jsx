@@ -4,7 +4,7 @@ import { FaHome, FaShoppingCart, FaHistory } from "react-icons/fa"; // Added FaH
 import "./ecommerce.css"; // Import CSS for styling
 import { useShop } from '../context/ShopContext';
 
-const EcommerceLayout = ({ login }) => {
+const EcommerceLayout = ({ login, user }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [query, setQuery] = useState("");
@@ -154,6 +154,9 @@ const EcommerceLayout = ({ login }) => {
                     />
                     <button type="submit" className="search-button">Search</button>
                 </form>
+                {user?.role === 'Farmer' && (
+                  <Link to="/shop/create" className="create-product-button">Create Product</Link>
+                )}
                     </div>
                 <div className="ecom-icons">
                         <Link to="/shop" className={`nav-icon ${location.pathname === '/shop' || location.pathname.startsWith('/shop/product') ? 'active' : ''}`}>

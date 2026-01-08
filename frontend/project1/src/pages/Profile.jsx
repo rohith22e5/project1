@@ -122,7 +122,7 @@ export default function Profile({ login, setLogin, user, setUser }) {
           const userData = {
             _id: userResponse.data._id,
             username: userResponse.data.username,
-            name: userResponse.data.username, // Use username as display name
+            name: userResponse.data.name || userResponse.data.username, // Use username as display name
             email: userResponse.data.email,
             avatar: avatar,
 
@@ -539,78 +539,63 @@ export default function Profile({ login, setLogin, user, setUser }) {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     setUpdateError("");
-    
+    setAvatarLoading(true);
+
+    const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME // Replace with your Cloudinary cloud name
+    const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_PRESET_NAME;   // Replace with your unsigned upload preset
+
     try {
-      setAvatarLoading(true);
-      
       const formData = new FormData();
-      formData.append('profileImage', file);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setUpdateError("Authentication required");
-        return;
-      }
-      
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+      formData.append("file", file);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
         }
-      };
-      
-      // Upload profile image
-      const response = await axios.post(
-        "/users/update-profile-image",
-        formData,
-        config
       );
-      
-      if (response.data && response.data.success) {
-        const avatarUrl = response.data.avatar;
-        
-        // Update user profile in backend with new avatar URL
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+        const avatarUrl = data.secure_url;
+        const token = localStorage.getItem("token");
+
         const updateResponse = await axios.put(
           "/auth/profile/update",
           { avatar: avatarUrl },
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
         );
 
         if (updateResponse.data && updateResponse.data.success) {
-          // Update local state
           const updatedUser = { ...user, avatar: avatarUrl };
           setUser(updatedUser);
-          
-          // Update localStorage with new user data
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          
-          // Show success notification
+          localStorage.setItem("user", JSON.stringify(updatedUser));
           setNotificationMessage("Profile picture updated successfully!");
           setShowNotification(true);
-          
-          // Auto-hide notification after 3 seconds
           setTimeout(() => {
             setShowNotification(false);
           }, 3000);
         }
+      } else {
+        throw new Error("Image upload failed");
       }
     } catch (error) {
       console.error("Error updating profile picture:", error);
-      const errorMessage = error.response?.data?.message || "Failed to update profile picture";
+      const errorMessage =
+        error.response?.data?.message || "Failed to update profile picture";
       setUpdateError(errorMessage);
-      
-      // Show error in custom notification
       setNotificationMessage(errorMessage);
       setShowNotification(true);
-      
-      // Auto-hide notification after 3 seconds
       setTimeout(() => {
         setShowNotification(false);
       }, 3000);

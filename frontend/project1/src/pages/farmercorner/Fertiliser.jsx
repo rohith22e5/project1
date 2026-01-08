@@ -4,7 +4,6 @@ import FertilizerResults from "./FertiliserResults"
 import FertilizerRec from "./FertiliserRecommendations"
 import IExa from "/images.jpg"
 import { useState, useEffect } from "react";
-import PYTHON_API_URL from "../../api/python.js";
 
 export default function Fertiliser({ login }) {
   const fallbackData = {
@@ -53,41 +52,6 @@ export default function Fertiliser({ login }) {
 
   const [analysisData, setAnalysisData] = useState(null);
   const [recommendationData, setRecommendationData] = useState(null);
-
-  useEffect(() => {
-    const isValid = analysisData?.recommended_fertilizer &&
-                    analysisData?.nitrogen !== undefined &&
-                    analysisData?.phosphorus !== undefined &&
-                    analysisData?.potassium !== undefined;
-  
-    if (!isValid) return;
-  
-    const fetchData = async () => {
-      try {
-        const fertrec = await fetch(`${PYTHON_API_URL}/fertiliser/recommendation`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            fertilizer: analysisData.recommended_fertilizer,
-            nitrogen: parseFloat(analysisData.nitrogen),
-            phosphorus: parseFloat(analysisData.phosphorus),
-            potassium: parseFloat(analysisData.potassium),
-          }),
-        });
-  
-        const recoJson = await fertrec.json();
-        if (recoJson && Object.keys(recoJson).length > 0) {
-          setRecommendationData(recoJson);
-        }
-      } catch (error) {
-        console.error("API fetch failed, using fallback data.", error);
-      }
-    };
-  
-    fetchData();
-  }, [analysisData]);
   
   function soilHealthScore(n, p, k) {
     // Ideal range
@@ -138,7 +102,38 @@ export default function Fertiliser({ login }) {
     }
   : fallbackData;
 
-  const finalReco = recommendationData|| fallbackReco
+  const isValid = analysisData?.recommended_fertilizer &&
+                    analysisData?.nitrogen !== undefined &&
+                    analysisData?.phosphorus !== undefined &&
+                    analysisData?.potassium !== undefined;
+  
+    
+    const finalReco = isValid
+  ? {
+      fertilizer: {
+        name: analysisData.recommended_fertilizer,
+        image: IExa, // static image
+      },
+
+      // 🔒 static frontend content
+      dosage: "Apply 50kg per hectare before irrigation.",
+      bestPractices: "Mix with soil properly and avoid direct contact with plant roots.",
+      warnings: "Excessive use may lead to soil acidification.",
+
+      // 📊 static visual data
+      trendsData: fallbackReco.trendsData,
+      seasonalRequirements: fallbackReco.seasonalRequirements,
+      nutrientDistribution: fallbackReco.nutrientDistribution,
+
+      // 📉 dynamic but frontend-derived
+      nutrientImbalance: [
+        { nutrient: "Nitrogen", value: Number(analysisData.nitrogen) },
+        { nutrient: "Phosphorus", value: Number(analysisData.phosphorus) },
+        { nutrient: "Potassium", value: Number(analysisData.potassium) },
+      ],
+    }
+  : fallbackReco;
+
 
   if (!login) {
     return <h1>404 Not Found!!</h1>;

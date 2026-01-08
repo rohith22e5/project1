@@ -8,9 +8,11 @@ export default function Shop({ login }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [products, setProducts] = useState({
-    vegetables: [],
-    fruits: [],
-    dairy: []
+    Vegetables: [],
+    Fruits: [],
+    Dairy: [],
+    Grains: [],
+    Other: []
   });
 
   useEffect(() => {
@@ -19,16 +21,23 @@ export default function Shop({ login }) {
         setLoading(true);
         const response = await axios.get('/shop/products');
         
-        // Organize products by category
         const categorizedProducts = {
-          vegetables: [],
-          fruits: [],
-          dairy: []
+          Vegetables: [],
+          Fruits: [],
+          Dairy: [],
+          Grains: [],
+          Other: []
         };
         
         response.data.forEach(product => {
-          if (categorizedProducts[product.category]) {
-            categorizedProducts[product.category].push(product);
+          // Normalize: "vegetables" -> "Vegetables"
+          const rawCat = product.category || "Other";
+          const normalizedCategory = rawCat.charAt(0).toUpperCase() + rawCat.slice(1).toLowerCase();
+
+          if (categorizedProducts.hasOwnProperty(normalizedCategory)) {
+            categorizedProducts[normalizedCategory].push(product);
+          } else {
+            categorizedProducts.Other.push(product);
           }
         });
         
@@ -41,61 +50,31 @@ export default function Shop({ login }) {
       }
     };
 
-    fetchProducts();
-  }, []);
+    if (login) fetchProducts();
+  }, [login]);
 
-  if (!login) {
-    return <p>404 Not Found</p>;
-  }
-
-  if (loading) {
-    return <div className="loading">Loading products...</div>;
-  }
-
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
+  if (!login) return <p>404 Not Found</p>;
+  if (loading) return <div className="loading">Loading products...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="shop-container">
       <h1 className="main-title">Farm Products</h1>
 
-      {/* Vegetables Section */}
-      <h3 className="category-title">Vegetables</h3>
-      <div className="product-grid">
-        {products.vegetables.length > 0 ? (
-          products.vegetables.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))
-        ) : (
-          <p>No vegetable products available</p>
-        )}
-      </div>
-
-      {/* Fruits Section */}
-      <h3 className="category-title">Fruits</h3>
-      <div className="product-grid">
-        {products.fruits.length > 0 ? (
-          products.fruits.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))
-        ) : (
-          <p>No fruit products available</p>
-        )}
-      </div>
-
-      {/* Dairy Products Section */}
-      <h3 className="category-title">Dairy Products</h3>
-      <div className="product-grid">
-        {products.dairy.length > 0 ? (
-          products.dairy.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))
-        ) : (
-          <p>No dairy products available</p>
-        )}
-      </div>
+      {['Vegetables', 'Fruits', 'Dairy', 'Grains', 'Other'].map((cat) => (
+        <div key={cat}>
+          <h3 className="category-title">{cat === 'Dairy' ? 'Dairy Products' : cat}</h3>
+          <div className="product-grid">
+            {products[cat].length > 0 ? (
+              products[cat].map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))
+            ) : (
+              <p>No {cat.toLowerCase()} products available</p>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
-

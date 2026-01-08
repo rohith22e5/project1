@@ -44,6 +44,18 @@ const userSchema = new mongoose.Schema({
     isGoogleUser: {
         type: Boolean,
         default: false
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerificationToken: {
+        type: String,
+        select: false // Hide this field by default when querying users
+    },
+    emailVerificationTokenExpires: {
+        type: Date,
+        select: false // Hide this field by default
     }
 }, {
     timestamps: true

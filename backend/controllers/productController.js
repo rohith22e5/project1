@@ -9,7 +9,7 @@ const createProduct = asyncHandler(async (req, res) => {
     
     
     
-    const { name, inventory, unit, price, description } = req.body;
+    const { name, inventory, unit, price, description, category, image } = req.body;
     
     // Validate required fields
     if (!name || inventory === undefined || !unit || price === undefined) {
@@ -26,6 +26,8 @@ const createProduct = asyncHandler(async (req, res) => {
             unit,
             price: Number(price),
             description: description || '',
+            category,
+            image,
             farmer: req.user._id
         });
         
@@ -86,7 +88,7 @@ const getProductById = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private (Farmers only for their own products)
 const updateProduct = asyncHandler(async (req, res) => {
-    const { name, inventory, unit, price, description } = req.body;
+    const { name, inventory, unit, price, description, category, image } = req.body;
     
     const product = await Product.findById(req.params.id);
     
@@ -107,6 +109,8 @@ const updateProduct = asyncHandler(async (req, res) => {
     product.unit = unit || product.unit;
     product.price = price !== undefined ? price : product.price;
     product.description = description !== undefined ? description : product.description;
+    product.category = category || product.category;
+    product.image = image || product.image;
     
     const updatedProduct = await product.save();
     

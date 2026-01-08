@@ -51,7 +51,7 @@ const words = text.split(" ");
       boxSizing: "border-box",
     }
   const features = [
-    "Smart Pest & Disease Detection - Identifies crop diseases early,recommends organic pesticides, reducing losses and improving yields.",
+
     "Organic Fertilizer Recommendation - Analyzes soil nutrients and crop requirements to suggest the best organic fertilizers, enhancing soil health and boosting sustainable farming.",
     "Smart Irrigation Management - Uses real-time temperature, pH, and moisture data to optimize water usage, ensuring crops receive the right amount of water while conserving resources.",
     "Real-time Crop Revenue and Yield Prediction - Leverages AI and data analytics to forecast crop yield and market revenue, helping farmers make informed decisions and maximize profits.",
@@ -59,7 +59,7 @@ const words = text.split(" ");
   ]
   const fmages = [Pest,Fertilisers,SmIr,Cy,Colab]
   const links = [
-    "/farmercorner/pest-disease-detection",
+    
     "/farmercorner/fertilizer-recommendation",
     "/farmercorner",
      "/farmercorner/crop-recommendation",
@@ -111,12 +111,12 @@ const words = text.split(" ");
    
   }
   const strings = [
-    "AI-Powered Crop Analysis - Detects pests, diseases, and soil deficiencies using machine learning for smarter farming.",
+    
     "Organic Fertilizer & Pesticide Suggestions - Recommends eco-friendly solutions to maintain soil health and sustainability.",
     "Real-time Soil & Weather Monitoring - Tracks soil fertility (NPK), pH, moisture, and temperature to optimize crop growth.",
     "Farmer Education & Guidance - Provides insights on organic farming techniques to enhance productivity and sustainability.",
    /* "Precision Farming Recommendations - Helps farmers choose the right crops based on soil conditions and climate data.",
-    "Smart Pest & Disease Detection - Identifies crop diseases early, reducing losses and improving yields.",
+    
     " Data-Driven Decision Making - Uses LSTM models to analyze agricultural data and enhance farm management.",
     "Sustainable Yield Optimization - Ensures maximum productivity with minimal environmental impact.",
     "Predictive Analysis for Crop Planning - Forecasts the best planting and harvesting times based on data trends.",

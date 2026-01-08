@@ -53,46 +53,26 @@ const Register = ({login, setLogin, setUser}) => {
         setLoading(true);
         
         try {
-            const response = await axios.post('/auth/register', {
+            // The backend now sends a message and userId, but no token
+            await axios.post('/auth/register', {
                 username,
                 email,
                 password,
                 mobile
             });
             
-            const { token, _id } = response.data;
-            
-            // Store token in localStorage
-            localStorage.setItem('token', token);
-            localStorage.setItem('userId', _id);
-            
-            // Create user object
-            const userObj = {
-                name: username,
-                username: username,
-                email: email,
-                mobile: mobile,
-                _id: _id,
-                role: "Farmer", // Default role
-                avatar: "/1.png" // Default avatar
-            };
-            
-            // Store user object in localStorage
-            localStorage.setItem('user', JSON.stringify(userObj));
-            
-            // Update app state
-            setLogin(true);
-            setUser(userObj);
-            
-            // Redirect to home page
-            navigate('/');
+            // On successful registration, redirect to the verification page.
+            // We pass the email in the navigation state so the VerifyEmail page
+            // knows which user is being verified.
+            navigate('/verify-email', { state: { email: email } });
             
         } catch (error) {
             if (error.response?.data?.errors) {
-                // Handle Zod validation errors
+                // Handle potential Zod validation errors from the backend
                 const validationErrors = error.response.data.errors;
                 setError(validationErrors.map(err => err.message).join(", "));
             } else {
+                // Handle other errors like "User already exists"
                 setError(
                     error.response?.data?.message || 
                     "Registration failed. Please try again."
