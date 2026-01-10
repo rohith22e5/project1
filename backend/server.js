@@ -29,7 +29,7 @@ dotenv.config();
 
 const app = express();
 
-// Logger
+// 1. LOGGER CONFIGURATION
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -45,38 +45,7 @@ if (process.env.NODE_ENV !== 'production') {
   }));
 }
 
-// Security middleware
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-  })
-);
-
-app.use(mongoSanitize());
-app.use(xss());
-app.use(hpp());
-
-
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
-    message: {
-        status: 429,
-        message: 'Too many requests from this IP, please try again after 15 minutes'
-    },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    handler: (req, res, next, options) => {
-        res.status(options.statusCode).json(options.message);
-    }
-});
-
-// Apply rate limiting to auth routes
-app.use('/api/auth', limiter);
-app.use('/api/admin', limiter);
-
-// CORS configuration
+// 2. CORS CONFIGURATION (MUST BE FIRST)
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5000',
@@ -85,46 +54,79 @@ const allowedOrigins = [
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
-    
+    'https://project1-brown-iota-76.vercel.app/' // Hardcoded as fallback
 ];
 
-if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+// Add environment variable URL if it exists
+if (process.env.FRONTEND_URL) {
     allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
 app.use(cors({
     origin: function(origin, callback) {
-        if (process.env.NODE_ENV !== 'production') {
-            // Allow all origins in development
-            return callback(null, true);
-        }
-        // allow requests with no origin (like mobile apps or curl requests)
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
             callback(null, true);
         } else {
+            logger.error(`CORS Blocked for origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
-// Request logging
+// 3. EXPLICIT PREFLIGHT HANDLING
+app.options('*', cors());
+
+// 4. SECURITY MIDDLEWARE
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // Set to false if you're serving frontend from same server
+}));
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
+
+// 5. BODY PARSING & COOKIES
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// 6. RATE LIMITING
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: process.env.NODE_ENV === 'development' ? 1000 : 100, 
+    message: {
+        status: 429,
+        message: 'Too many requests from this IP, please try again after 15 minutes'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limiting to specific paths
+app.use('/api/auth', limiter);
+app.use('/api/admin', limiter);
+
+// 7. REQUEST LOGGING
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`);
     next();
 });
 
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Serve uploaded files statically
+// 8. STATIC FILES & DIRECTORY SETUP
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
+const uploadDir = path.join(__dirname, 'uploads', 'profiles');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// 9. API ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/social', socialRoutes);
@@ -132,46 +134,37 @@ app.use('/api/shop', shopRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 
-// Serve uploaded files statically
-
-
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads', 'profiles');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Health check route
+// 10. HEALTH CHECK
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Server is running' });
+    res.status(200).json({ status: 'ok', message: 'Server is running', env: process.env.NODE_ENV });
 });
 
-// Serve frontend in production
+// 11. FRONTEND SERVING (If applicable)
 if (process.env.NODE_ENV === 'production') {
     const frontendPath = path.resolve(__dirname, '..', 'frontend', 'project1', 'dist');
-    
     if (fs.existsSync(frontendPath)) {
         app.use(express.static(frontendPath));
-
         app.get('*', (req, res) => {
             res.sendFile(path.resolve(frontendPath, 'index.html'));
         });
-    } else {
-        logger.warn("Frontend build not found. Run 'npm run build' in the frontend directory.");
     }
 }
 
-// Error Handling
+// 12. ERROR HANDLING
 app.use(errorHandler);
 
+// 13. SERVER START
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== 'test') {
   connectDB().then(() => {
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => { // Using 0.0.0.0 for Cloud Deployment
         logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     });
+  }).catch(err => {
+    logger.error('Database connection failed:', err);
+    process.exit(1);
   });
 }
 
-export default app; 
+export default app;
