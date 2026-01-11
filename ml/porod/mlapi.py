@@ -92,7 +92,7 @@ def soil_health_score(n, p, k):
 
 # ===================== FERTILIZER =====================
 from ml.fertilizer.predictor import predict_fertilizer
-from ml.fastapi.fert import get_fertiliser_query
+from ml.porod.fert import get_fertiliser_query
 
 def load_fertilizer_model():
     if not hasattr(app.state, "fert_model"):
@@ -195,7 +195,7 @@ async def fertilizer_reco(data: FertilizerRecoRequest):
 
 # ===================== CROP =====================
 from ml.crop.main import CropRecommendationLSTM
-from ml.fastapi.CropRec import get_crop_recommendation_query
+from ml.porod.CropRec import get_crop_recommendation_query
 
 def load_crop_model():
     if not hasattr(app.state, "crop_model"):
