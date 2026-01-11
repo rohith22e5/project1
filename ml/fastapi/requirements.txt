@@ -13,3 +13,6 @@ google-generativeai
 requests
 tensorflow
 scikit-learn
+imbalanced-learn
+kagglehub
+optuna

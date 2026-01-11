@@ -12,7 +12,13 @@ joblib
 scikit-learn
 tensorflow-cpu
 pdfplumber
+google-generativeai
+requests
 
+
+imbalanced-learn
+kagglehub
+optuna
 # --- Redis & Rate Limiting ---
 redis    # (Required by fastapi-limiter)
 fastapi-limiter
