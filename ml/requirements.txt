@@ -1,0 +1,21 @@
+# --- Core Backend ---
+fastapi  # (Add if missing, or use latest)
+uvicorn  # (Add if missing, or use latest)
+gunicorn
+python-dotenv
+pydantic
+
+# --- ML & Data Processing ---
+numpy
+pandas
+joblib
+scikit-learn
+tensorflow-cpu
+pdfplumber
+
+# --- Redis & Rate Limiting ---
+redis    # (Required by fastapi-limiter)
+fastapi-limiter
+
+# --- Utilities ---
+python-multipart  # (Required for File uploads in FastAPI)

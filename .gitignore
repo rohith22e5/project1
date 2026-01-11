@@ -19,8 +19,7 @@ fastapi/static
 *.rdb
 
 # ML models / data
-*.pkl
-*.h5
+
 *.csv
 
 # IDE and OS files
