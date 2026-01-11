@@ -86,27 +86,24 @@ export default function Fertiliser({ login }) {
   }
   
 
-  const finalAnalysis = analysisData && analysisData.nitrogen !== undefined
+  const finalAnalysis = analysisData && analysisData.npk !== undefined
   ? {
       ...analysisData,
       soilHealth: soilHealthScore(
-        parseFloat(analysisData.nitrogen || 0),
-         parseFloat(analysisData.phosphorus || 0),
-         parseFloat(analysisData.potassium || 0) 
+        parseFloat(analysisData.npk.n || 0),
+         parseFloat(analysisData.npk.p || 0),
+         parseFloat(analysisData.npk.k || 0) 
       ),
       npk: {
-        n: analysisData.nitrogen,
-        p: analysisData.phosphorus,
-        k: analysisData.potassium,
+        n: analysisData.npk.n,
+        p: analysisData.npk.p,
+        k: analysisData.npk.k,
       }
     }
   : fallbackData;
 
   const isValid = analysisData?.recommended_fertilizer &&
-                    analysisData?.nitrogen !== undefined &&
-                    analysisData?.phosphorus !== undefined &&
-                    analysisData?.potassium !== undefined;
-  
+                    analysisData?.npk !== undefined
     
     const finalReco = isValid
   ? {
@@ -127,9 +124,9 @@ export default function Fertiliser({ login }) {
 
       // 📉 dynamic but frontend-derived
       nutrientImbalance: [
-        { nutrient: "Nitrogen", value: Number(analysisData.nitrogen) },
-        { nutrient: "Phosphorus", value: Number(analysisData.phosphorus) },
-        { nutrient: "Potassium", value: Number(analysisData.potassium) },
+        { nutrient: "Nitrogen", value: Number(analysisData.npk.n) },
+        { nutrient: "Phosphorus", value: Number(analysisData.npk.p) },
+        { nutrient: "Potassium", value: Number(analysisData.npk.k) },
       ],
     }
   : fallbackReco;
