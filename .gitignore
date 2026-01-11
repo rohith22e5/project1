@@ -20,7 +20,6 @@ fastapi/static
 
 # ML models / data
 
-*.csv
 
 # IDE and OS files
 .vscode/

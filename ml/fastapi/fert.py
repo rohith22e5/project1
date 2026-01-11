@@ -2,7 +2,7 @@ import re
 from google import genai
 import json
 
-from .Credentials import getCredentials
+from fastapi.Credentials import getCredentials
 YOUR_API_KEY = getCredentials()
 
 client = genai.Client(api_key=YOUR_API_KEY)
