@@ -14,7 +14,7 @@ tensorflow-cpu
 pdfplumber
 google-generativeai
 requests
-
+google-genai
 
 imbalanced-learn
 kagglehub
