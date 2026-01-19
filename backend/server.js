@@ -28,6 +28,7 @@ const __dirname = dirname(__filename);
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1);
 
 // 1. LOGGER CONFIGURATION
 const logger = winston.createLogger({
@@ -54,7 +55,7 @@ const allowedOrigins = [
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
-    'https://project1-brown-iota-76.vercel.app/' // Hardcoded as fallback
+    'https://project1-brown-iota-76.vercel.app' // Hardcoded as fallback
 ];
 
 // Add environment variable URL if it exists
