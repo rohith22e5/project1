@@ -6,26 +6,25 @@ import Admin from '../models/adminModel.js';
 import jwt from 'jsonwebtoken';
 
 describe('Auth API', () => {
-  const validPassword = 'Password123';
+  const validPassword = 'Password123!'; // Updated to include a special character
 
   describe('POST /api/auth/register', () => {
     it('should register a new user successfully', async () => {
       const res = await request(app)
         .post('/api/auth/register')
         .send({
-          username: 'testuser',
           email: 'test@example.com',
           password: validPassword,
-          mobile: '1234567890',
         });
 
       expect(res.statusCode).toEqual(201);
-      expect(res.body).toHaveProperty('token');
-      expect(res.body.username).toBe('testuser');
+      expect(res.body).toHaveProperty('userId');
+      expect(res.body.message).toContain('A verification email has been sent');
 
       // Verify user is in the database
       const user = await User.findOne({ email: 'test@example.com' });
       expect(user).not.toBeNull();
+      expect(user.isEmailVerified).toBe(false); // Newly registered users are not verified
     });
 
     it('should return 400 if email already exists', async () => {
@@ -34,12 +33,12 @@ describe('Auth API', () => {
         username: 'testuser',
         email: 'test@example.com',
         password: validPassword,
+        isEmailVerified: true, // Mark as verified for login tests later
       });
 
       const res = await request(app)
         .post('/api/auth/register')
         .send({
-          username: 'anotheruser',
           email: 'test@example.com',
           password: validPassword,
         });
@@ -52,22 +51,38 @@ describe('Auth API', () => {
       const res = await request(app)
         .post('/api/auth/register')
         .send({
-          username: 'testuser',
-          email: 'test@example.com',
+          email: 'invalid@example.com',
         });
 
       expect(res.statusCode).toEqual(400);
-      expect(res.body.message).toContain('password: Required');
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors[0].field).toBe('password');
+      expect(res.body.errors[0].message).toBe('Required');
+    });
+
+    it('should return 400 for invalid password format (e.g., no special character)', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'format@example.com',
+          password: 'Password123', // Missing special character
+        });
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors[0].field).toBe('password');
+      expect(res.body.errors[0].message).toBe('Password must contain at least one special character');
     });
   });
 
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
-      // Create a user to login with
+      // Create a user to login with, ensuring email is verified
       const user = new User({
         username: 'loginuser',
         email: 'login@example.com',
         password: validPassword,
+        isEmailVerified: true,
       });
       await user.save();
     });
@@ -96,6 +111,26 @@ describe('Auth API', () => {
       expect(res.statusCode).toEqual(401);
       expect(res.body.message).toBe('Invalid email or password');
     });
+
+    it('should return 401 if email is not verified', async () => {
+      // Create an unverified user
+      await User.create({
+        username: 'unverifieduser',
+        email: 'unverified@example.com',
+        password: validPassword,
+        isEmailVerified: false,
+      });
+
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'unverified@example.com',
+          password: validPassword,
+        });
+
+      expect(res.statusCode).toEqual(401);
+      expect(res.body.message).toBe('Please verify your email before logging in. You can request a new verification code.');
+    });
   });
 
   describe('Auth Middleware', () => {
@@ -111,6 +146,7 @@ describe('Auth API', () => {
             username: 'protecteduser',
             email: 'protected@example.com',
             password: validPassword,
+            isEmailVerified: true,
         });
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
@@ -144,13 +180,14 @@ describe('Auth API', () => {
             username: 'notadmin',
             email: 'notadmin@example.com',
             password: validPassword,
+            isEmailVerified: true,
         });
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
         const res = await request(app)
             .get('/api/admin/dashboard')
             .set('Authorization', `Bearer ${token}`);
-        
+
         expect(res.statusCode).toEqual(401);
         expect(res.body.message).toBe('Not authorized, token failed');
     });
@@ -160,6 +197,7 @@ describe('Auth API', () => {
             username: 'adminuser',
             email: 'admin@example.com',
             password: validPassword,
+            isEmailVerified: true,
         });
         const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET);
 

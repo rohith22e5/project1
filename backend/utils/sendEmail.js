@@ -2,25 +2,38 @@ import nodemailer from 'nodemailer';
 import logger from '../config/logger.js';
 
 const sendEmail = async (options) => {
-  // 1. Create a transporter using environment variables
-  // You need to set these variables in your .env file
-  // e.g., for Mailtrap or SendGrid
+  // 1. Create a transporter using Gmail service for better reliability
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
+    service: "gmail",
     auth: {
-      user: process.env.EMAIL_USERNAME,
-      pass: process.env.EMAIL_PASSWORD,
+      user: process.env.EMAIL_USER, // Ensure this is EMAIL_USER
+      pass: process.env.EMAIL_PASS, // App password, NOT normal password
     },
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    rateDelta: 1000,
+    rateLimit: 5,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
+
+  // Verify connection configuration
+  try {
+    await transporter.verify();
+    logger.info("Nodemailer transporter is verified and ready to send emails.");
+  } catch (error) {
+    logger.error(`Nodemailer transporter verification failed: ${error.stack}`);
+    throw new Error('Email server not ready. Please check configuration.');
+  }
 
   // 2. Define the email options
   const mailOptions = {
-    from: 'Agri Store <rohith22241a05e5@grietcollege.com>',
+    from: `Agri Store <${process.env.EMAIL_USER}>`, // Use the same email as auth
     to: options.email,
     subject: options.subject,
     text: options.message,
-    // You can also provide an HTML version
     // html: options.html,
   };
 

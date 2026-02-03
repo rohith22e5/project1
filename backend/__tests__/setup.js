@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { jest, beforeAll, afterAll, afterEach } from '@jest/globals';
 
 // Set a higher timeout for Jest to allow MongoDB Memory Server to download if needed
-jest.setTimeout(60000);
+jest.setTimeout(120000);
 
 let mongoServer;
 
