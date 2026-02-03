@@ -4,20 +4,23 @@ import logger from '../config/logger.js';
 const sendEmail = async (options) => {
   // 1. Create a transporter using Gmail service for better reliability
   const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER, // Ensure this is EMAIL_USER
-      pass: process.env.EMAIL_PASS, // App password, NOT normal password
-    },
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-    rateDelta: 1000,
-    rateLimit: 5,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-  });
+  host: process.env.SMTP_HOST, 
+  port: 587,
+  secure: false, // Must be false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    // This prevents the connection from dropping if there are 
+    // certificate name mismatches on the host
+    rejectUnauthorized: false 
+  },
+  // Give the connection more time to breathe on slow networks
+  connectionTimeout: 10000, 
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
+});
 
   // Verify connection configuration
   try {
