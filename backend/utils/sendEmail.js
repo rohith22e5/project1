@@ -4,12 +4,12 @@ import logger from '../config/logger.js';
 const sendEmail = async (options) => {
   // 1. Create a transporter using Gmail service for better reliability
   const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST, 
+  host: process.env.EMAIL_HOST, 
   port: 587,
   secure: false, // Must be false for 587
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
     // This prevents the connection from dropping if there are 
@@ -33,7 +33,7 @@ const sendEmail = async (options) => {
 
   // 2. Define the email options
   const mailOptions = {
-    from: `Agri Store <${process.env.EMAIL_USER}>`, // Use the same email as auth
+    from: `Agri Store <${process.env.EMAIL_USERNAME}>`, // Use the same email as auth
     to: options.email,
     subject: options.subject,
     text: options.message,
