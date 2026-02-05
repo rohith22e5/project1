@@ -92,36 +92,6 @@ const Login = ({login, setLogin, setUser}) => {
         }
     }
 
-    const handleGoogleLogin = async () => {
-        try {
-            setLoading(true);
-            setError("");
-            
-            // Request Google OAuth URL from backend
-            const response = await axios.get("/auth/google/url");
-            
-            if (response.data && response.data.authUrl) {
-                console.log("Google OAuth data:", response.data);
-                
-                // Use direct URL to avoid manipulation issues
-                const authUrl = response.data.authUrl;
-                
-                // Log the URL for debugging
-                console.log("Google Auth URL:", authUrl);
-                
-                // Redirect to Google login
-                window.location.href = authUrl;
-            } else {
-                setError("Failed to get Google authentication URL");
-            }
-        } catch (error) {
-            console.error("Google login error:", error);
-            setError("Failed to initiate Google login. Please try again later.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     return (
         <div style={myStyle}>
             <div className="logo-container">
@@ -164,14 +134,7 @@ const Login = ({login, setLogin, setUser}) => {
                         value={loading ? "Signing in..." : "Sign in"} 
                         className="login-submit"
                         disabled={loading}
-                    /> 
-                    <button 
-                        type="button" 
-                        className="login-with-google-btn"
-                        onClick={handleGoogleLogin}
-                    >
-                        Sign in with Google
-                    </button>
+                    />
                     </div>
                 </form>  
                 <div>

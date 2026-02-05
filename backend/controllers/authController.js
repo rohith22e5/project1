@@ -2,16 +2,7 @@ import asyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 import { registerSchema, loginSchema } from '../validation/authValidation.js';
-import { OAuth2Client } from 'google-auth-library';
 import logger from '../config/logger.js';
-import sendEmail from '../utils/sendEmail.js';
-
-// Google OAuth client setup
-const client = new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URL
-);
 
 // Generate JWT
 const generateToken = (id) => {
@@ -20,150 +11,6 @@ const generateToken = (id) => {
     });
 };
 
-// --- NEW --- Function to send OTP
-const sendVerificationEmail = async (user) => {
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.emailVerificationToken = otp;
-    user.emailVerificationTokenExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-    await user.save({ validateBeforeSave: false }); // Skip validation to save token
-
-    // Send email
-    await sendEmail({
-        email: user.email,
-        subject: 'Verify Your Email Address',
-        message: `Welcome! Your One-Time Password (OTP) for email verification is: ${otp}\nThis code will expire in 10 minutes.`
-    });
-};
-
-
-// Generates a Google OAuth URL for frontend to redirect to
-const getGoogleAuthURL = asyncHandler(async (req, res) => {
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_REDIRECT_URL) {
-        logger.error('Missing Google OAuth credentials in environment variables');
-        res.status(500);
-        throw new Error('Server configuration error: Google OAuth is not properly configured');
-    }
-
-    const scopes = [
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'https://www.googleapis.com/auth/userinfo.email',
-    ];
-
-    const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
-    const urlParams = new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        redirect_uri: process.env.GOOGLE_REDIRECT_URL,
-        response_type: 'code',
-        access_type: 'offline',
-        prompt: 'consent',
-        scope: scopes.join(' '),
-        state: JSON.stringify({
-            redirectUrl: req.query.redirectUrl || process.env.FRONTEND_URL,
-        }),
-    });
-
-    const authUrl = `${baseUrl}?${urlParams.toString()}`;
-    res.json({ authUrl });
-});
-
-// Google OAuth callback handler
-const googleCallback = asyncHandler(async (req, res) => {
-    const { code, state } = req.query;
-    
-    if (!code) {
-        res.status(400);
-        throw new Error('Authorization code is required');
-    }
-    
-    try {
-        const tokenUrl = 'https://oauth2.googleapis.com/token';
-        const tokenParams = new URLSearchParams({
-            code,
-            client_id: process.env.GOOGLE_CLIENT_ID,
-            client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            redirect_uri: process.env.GOOGLE_REDIRECT_URL,
-            grant_type: 'authorization_code'
-        });
-        
-        const tokenResponse = await fetch(tokenUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: tokenParams.toString()
-        });
-        
-        if (!tokenResponse.ok) {
-            const errorData = await tokenResponse.json().catch(() => ({}));
-            throw new Error(`Token exchange failed: ${errorData.error || tokenResponse.statusText}`);
-        }
-        
-        const tokens = await tokenResponse.json();
-        
-        if (!tokens.id_token) {
-            throw new Error('Invalid token response from Google');
-        }
-        
-        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': `Bearer ${tokens.access_token}` }
-        });
-        
-        if (!userInfoResponse.ok) {
-            throw new Error('Failed to fetch user information from Google');
-        }
-        
-        const { email, name, picture, sub } = await userInfoResponse.json();
-        
-        if (!email) {
-            throw new Error('Failed to extract user information');
-        }
-        
-        let user = await User.findOne({ email });
-        
-        if (!user) {
-            const password = Math.random().toString(36).slice(-8);
-            let username = name || email.split('@')[0];
-            // Ensure username is unique
-            if (await User.findOne({ username })) {
-                username = `${username}${Math.floor(Math.random() * 1000)}`;
-            }
-
-            user = await User.create({
-                username,
-                email,
-                password,
-                googleId: sub,
-                avatar: picture || '',
-                isGoogleUser: true,
-                isEmailVerified: true // Google users are verified by default
-            });
-        } else {
-            user.googleId = sub;
-            user.isGoogleUser = true;
-            user.isEmailVerified = true; // Mark as verified
-            if (picture && !user.avatar) user.avatar = picture;
-            await user.save();
-        }
-        
-        const token = generateToken(user._id);
-        
-        let redirectUrl = process.env.FRONTEND_URL;
-        try {
-            if (state) redirectUrl = JSON.parse(state).redirectUrl || redirectUrl;
-        } catch (err) {
-            logger.error('Error parsing state:', err);
-        }
-        
-        res.redirect(`${redirectUrl}/oauth/callback?token=${token}&userId=${user._id}`);
-        
-    } catch (error) {
-        logger.error(`Google OAuth Callback Error: ${error.stack}`);
-        const redirectUrl = process.env.FRONTEND_URL;
-        const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
-        res.redirect(`${redirectUrl}/oauth/callback?error=${errorMessage}`);
-    }
-});
-
-// --- MODIFIED ---
 const registerUser = asyncHandler(async (req, res) => {
     const result = registerSchema.safeParse(req.body);
 
@@ -193,18 +40,23 @@ const registerUser = asyncHandler(async (req, res) => {
         // For now, we'll proceed but this is a consideration.
     }
 
-    const user = await User.create({ username, email, password });
+    const user = await User.create({ username, email, password, isEmailVerified: true });
 
     if (user) {
-        try {
-            await sendVerificationEmail(user);
-        } catch (err) {
-            logger.error(`Email failed to send for user ${user._id}: ${err.message}`);
-        }
-        
+        const token = generateToken(user._id);
+            
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
         res.status(201).json({
-            message: `A verification email has been sent to ${user.email}. Please check your inbox and enter the OTP.`,
-            userId: user._id
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            token
         });
 
     } else {
@@ -213,98 +65,11 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 });
 
-// --- NEW ---
-const verifyEmail = asyncHandler(async (req, res) => {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-        res.status(400);
-        throw new Error('Email and OTP are required');
-    }
-
-    const user = await User.findOne({ email }).select('+emailVerificationToken +emailVerificationTokenExpires');
-
-    if (!user) {
-        res.status(404);
-        throw new Error('User not found');
-    }
-
-    if (user.isEmailVerified) {
-        res.status(400);
-        throw new Error('Email is already verified');
-    }
-
-    const isTokenValid = user.emailVerificationToken === otp;
-    const isTokenExpired = user.emailVerificationTokenExpires < new Date();
-
-    if (!isTokenValid || isTokenExpired) {
-        res.status(400);
-        throw new Error('Invalid or expired OTP. Please request a new one.');
-    }
-
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationTokenExpires = undefined;
-    await user.save();
-
-    const token = generateToken(user._id);
-            
-    res.cookie('jwt', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
-
-    res.status(200).json({
-        message: 'Email verified successfully. You are now logged in.',
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        token
-    });
-});
-
-// --- NEW ---
-const resendVerificationEmail = asyncHandler(async (req, res) => {
-    const { email } = req.body;
-    if (!email) {
-        res.status(400);
-        throw new Error('Email is required');
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-        res.status(404);
-        throw new Error('User not found');
-    }
-
-    if (user.isEmailVerified) {
-        res.status(400);
-        throw new Error('This email is already verified.');
-    }
-
-    try {
-        await sendVerificationEmail(user);
-        res.status(200).json({ message: `A new verification email has been sent to ${email}.` });
-    } catch (error) {
-        res.status(500);
-        throw new Error('Failed to resend verification email. Please try again later.');
-    }
-});
-
-
-// --- MODIFIED ---
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
-        if (!user.isEmailVerified) {
-            res.status(401);
-            throw new Error('Please verify your email before logging in. You can request a new verification code.');
-        }
-
         const token = generateToken(user._id);
         
         res.cookie('jwt', token, {
@@ -323,78 +88,6 @@ const loginUser = asyncHandler(async (req, res) => {
     } else {
         res.status(401);
         throw new Error('Invalid email or password');
-    }
-});
-
-// Google OAuth login handler (client-side flow)
-const googleLogin = asyncHandler(async (req, res) => {
-    const { idToken } = req.body;
-    
-    if (!idToken) {
-        res.status(400);
-        throw new Error('Google ID token is required');
-    }
-    
-    try {
-        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-        let ticket;
-        try {
-            ticket = await client.verifyIdToken({
-                idToken,
-                audience: process.env.GOOGLE_CLIENT_ID
-            });
-        } catch (error) {
-            res.status(401);
-            throw new Error('Invalid Google token');
-        }
-
-        const { email, name, picture, sub } = ticket.getPayload();
-        
-        let user = await User.findOne({ email });
-        
-        if (!user) {
-            const password = Math.random().toString(36).slice(-8);
-            let username = name || email.split('@')[0];
-            if (await User.findOne({ username })) {
-                username = `${username}${Math.floor(Math.random() * 1000)}`;
-            }
-            
-            user = await User.create({
-                username,
-                email,
-                password,
-                googleId: sub,
-                avatar: picture || '',
-                isGoogleUser: true,
-                isEmailVerified: true // Google users are verified by default
-            });
-        } else {
-            user.googleId = sub;
-            user.isGoogleUser = true;
-            user.isEmailVerified = true; // Mark as verified
-            if (picture && !user.avatar) user.avatar = picture;
-            await user.save();
-        }
-        
-        const token = generateToken(user._id);
-        
-        res.cookie('jwt', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV !== 'development',
-            sameSite: 'strict',
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        });
-        
-        res.json({
-            _id: user._id,
-            username: user.username,
-            email: user.email,
-            token
-        });
-    } catch (error) {
-        logger.error(`Google OAuth Error: ${error.stack}`);
-        res.status(401);
-        throw new Error('Google authentication failed');
     }
 });
 
@@ -421,7 +114,6 @@ const getUserProfile = asyncHandler(async (req, res) => {
             country: user.country,
             avatar: user.avatar,
             role: user.role,
-            isGoogleUser: user.isGoogleUser,
             isEmailVerified: user.isEmailVerified
         });
     } else {
@@ -498,12 +190,7 @@ const updateUserPassword = asyncHandler(async (req, res) => {
 
 export { 
     registerUser,
-    verifyEmail,
-    resendVerificationEmail,
     loginUser, 
-    googleLogin, 
-    googleCallback, 
-    getGoogleAuthURL, 
     logoutUser, 
     getUserProfile,
     updateUserProfile,

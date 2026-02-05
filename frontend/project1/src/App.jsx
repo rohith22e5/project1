@@ -9,7 +9,6 @@ import { ShopProvider } from './context/ShopContext';
 import Home from './pages/Home.jsx';
 import Login from './pages/login.jsx';
 import Register from './pages/Register.jsx';
-import VerifyEmail from './pages/VerifyEmail.jsx';
 import Profile from './pages/Profile.jsx';
 import Notfound from './pages/Notfound.jsx';
 import Box2 from './pages/Box2.jsx';
@@ -42,101 +41,6 @@ import CreateProduct from './pages/CreateProduct.jsx';
 // Assets
 import "./pages/styles.css";
 import defaultAvatar from "./frontimages/onlyplant.jpg";
-// function App(props) {
-//  const loginb = true;
-//  const user = {
-//   name: "John Doe",
-//   avatar: img, // Replace with an actual image URL
-//   role: "Farmer", // Can be "Farmer" or any other role
-//   mobile:"1234567890",
-//   email:"johndoe@gmail.com"
-// };
-// >>>>>>> upstream/main
-
-// Helper component to handle Google OAuth redirect
-function GoogleCallbackHandler() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const handleGoogleCallback = () => {
-      // Parse URL parameters
-      const params = new URLSearchParams(location.search);
-      const token = params.get('token');
-      const userId = params.get('userId');
-      const errorMessage = params.get('error');
-      
-      if (errorMessage) {
-        // Handle error case
-        console.error("Google OAuth Error:", decodeURIComponent(errorMessage));
-        setError(decodeURIComponent(errorMessage));
-        setLoading(false);
-        return;
-      }
-      
-      if (token && userId) {
-        // Store token and user info
-        localStorage.setItem('token', token);
-        localStorage.setItem('userId', userId);
-        
-        // Create basic user data to prevent redirect issues
-        const basicUserData = {
-          _id: userId,
-          username: "User",
-          name: "User",
-          email: "",
-          mobile: "",
-          role: "Farmer",
-          avatar: "/1.png"
-        };
-        localStorage.setItem('user', JSON.stringify(basicUserData));
-        
-        // Redirect to home page instead of profile page
-        navigate('/');
-        
-        // Reload to apply the changes
-        window.location.reload();
-      } else {
-        setError("Authentication failed. Missing token or user ID.");
-        setLoading(false);
-      }
-    };
-    
-    handleGoogleCallback();
-  }, [location, navigate]);
-  
-  if (error) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        textAlign: "center", 
-        maxWidth: "600px", 
-        margin: "100px auto", 
-        backgroundColor: "#f8d7da", 
-        borderRadius: "5px",
-        color: "#721c24" 
-      }}>
-        <h3>Authentication Error</h3>
-        <p>{error}</p>
-        <p>Please <a href="/login" style={{ color: "#721c24", fontWeight: "bold" }}>try again</a> or contact support.</p>
-      </div>
-    );
-  }
-  
-  return (
-    <div style={{ 
-      padding: "20px", 
-      textAlign: "center", 
-      maxWidth: "600px", 
-      margin: "100px auto" 
-    }}>
-      <h3>Processing Google login...</h3>
-      {loading && <p>Please wait while we authenticate your account.</p>}
-    </div>
-  );
-}
 
 // Clear cart badge on startup
 if (typeof window !== 'undefined' && window.localStorage) {
@@ -367,9 +271,6 @@ function App() {
           </Route>
         </Route>
 
-        {/* Google OAuth callback route */}
-        <Route path="/oauth/callback" element={<GoogleCallbackHandler />} />
-
         <Route 
           path="login" 
           element={
@@ -385,15 +286,6 @@ function App() {
             isLoggedIn ? 
             <Navigate to="/" replace /> : 
             <Register login={isLoggedIn} setLogin={setIsLoggedIn} setUser={setUser} />
-          }
-        />
-
-        <Route 
-          path="verify-email"
-          element={
-            isLoggedIn ?
-            <Navigate to="/" replace /> :
-            <VerifyEmail />
           }
         />
       </Routes>

@@ -53,18 +53,39 @@ const Register = ({login, setLogin, setUser}) => {
         setLoading(true);
         
         try {
-            // The backend now sends a message and userId, but no token
-            await axios.post('/auth/register', {
+            const response = await axios.post('/auth/register', {
                 username,
                 email,
                 password,
                 mobile
             });
+
+            const { token, _id } = response.data;
             
-            // On successful registration, redirect to the verification page.
-            // We pass the email in the navigation state so the VerifyEmail page
-            // knows which user is being verified.
-            navigate('/verify-email', { state: { email: email } });
+            // Store token in localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('userId', _id);
+            
+            // Create user object
+            const userObj = {
+                name: username,
+                username: username,
+                email: email,
+                mobile: mobile,
+                _id: _id,
+                role: "Farmer", // Default role
+                avatar: "/1.png" // Default avatar
+            };
+            
+            // Store user object in localStorage
+            localStorage.setItem('user', JSON.stringify(userObj));
+            
+            // Update app state
+            setLogin(true);
+            setUser(userObj);
+            
+            // Redirect to home page
+            navigate('/');
             
         } catch (error) {
             if (error.response?.data?.errors) {
@@ -78,36 +99,6 @@ const Register = ({login, setLogin, setUser}) => {
                     "Registration failed. Please try again."
                 );
             }
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    const handleGoogleLogin = async () => {
-        try {
-            setLoading(true);
-            setError("");
-            
-            // Request Google OAuth URL from backend
-            const response = await axios.get("/auth/google/url");
-            
-            if (response.data && response.data.authUrl) {
-                console.log("Google OAuth data:", response.data);
-                
-                // Use direct URL to avoid manipulation issues
-                const authUrl = response.data.authUrl;
-                
-                // Log the URL for debugging
-                console.log("Google Auth URL:", authUrl);
-                
-                // Redirect to Google login
-                window.location.href = authUrl;
-            } else {
-                setError("Failed to get Google authentication URL");
-            }
-        } catch (error) {
-            console.error("Google login error:", error);
-            setError("Failed to initiate Google login. Please try again later.");
         } finally {
             setLoading(false);
         }
@@ -172,13 +163,6 @@ const Register = ({login, setLogin, setUser}) => {
                             style={{padding:"30px",paddingTop:"20px",paddingLeft:"20px",paddingBottom:"20px"}}
                             disabled={loading} 
                         />
-                        <button 
-                            type="button" 
-                            className="login-with-google-btn"
-                            onClick={handleGoogleLogin}
-                        >
-                            Sign up with Google
-                        </button>
                     </div>
                 </form>
                 <div>

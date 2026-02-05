@@ -115,6 +115,7 @@
 .login-button-container{
     display: flex;
     flex-direction: row;
+    justify-content: center;
 }
 .login-content .login-submit{
     padding-left: 0px;
@@ -146,6 +147,7 @@
       
     
 }
+
 
 .login-with-google-btn {
     display: flex;
